@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
     alarm(TIMESLOT);  
 
 
-    while (true) {
+    while (!stop_server) {
         //epoll_wait获取事件发生的fd
         int epollret = epoll_wait(epollfd, events, MAX_EVENT_NUMBER, -1);
         if ((epollret < 0) && (errno != EINTR)) {
