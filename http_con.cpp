@@ -18,7 +18,7 @@ const char* error_500_title = "Internal Error";
 const char* error_500_form = "There was an unusual problem serving the requested file.\n";
 
 // 网站的根目录
-const char* doc_root = "/home/xzb/code/resources";
+const char* doc_root = "/home/xzb/code/xzb_webserver/resources";
 
 //构造函数
 http_con::http_con(){
