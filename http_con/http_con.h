@@ -7,7 +7,6 @@
 #include<sys/types.h>
 #include<fcntl.h>
 #include<unistd.h>
-#include"threadpool.h"
 #include<stdio.h>
 #include<string.h>
 #include<sys/stat.h>
@@ -17,7 +16,8 @@
 #include<errno.h>
 #include<stdarg.h>
 #include<sys/uio.h>
-#include"lst_timer.h"
+#include"../timer/lst_timer.h"
+#include"../threadpool/threadpool.h"
 
 using namespace std;
 

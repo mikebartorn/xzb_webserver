@@ -3,8 +3,8 @@
 #include<pthread.h>
 #include<exception>
 #include<semaphore.h>
-#include <stdio.h>
-#include <assert.h>
+#include<stdio.h>
+#include<assert.h>
 
 using namespace std;
 

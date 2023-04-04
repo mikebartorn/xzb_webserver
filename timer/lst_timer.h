@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <time.h>
 #include <arpa/inet.h>
-#include "http_con.h"
-#include "locker.h"
+#include "../http_con/http_con.h"
+#include "../lock/locker.h"
 
 class http_con;
 // ¶¨Ê±Æ÷Àà

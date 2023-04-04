@@ -1,7 +1,7 @@
 #include "config.h"
 
 Config::Config() {
-    //¶Ë¿ÚºÅ£¬Ä¬ÈÏÊÇ10000
+    //?????10000
     port = 10000;
 }
 
