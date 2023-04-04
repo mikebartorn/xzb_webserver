@@ -99,43 +99,12 @@ void Webserver::eventloop() {
             int sockfd = events[i].data.fd;
             //判断是监听的文件描述符还是客户端的文件描述符
             if (sockfd == listenfd) {
-                //如果是监听描述符，需要添加到epoll监听队列中
-                struct sockaddr_in clientadd;
-                socklen_t len = sizeof(clientadd);
-                int cfd = accept(listenfd, (struct sockaddr *)&clientadd, &len);
-                //判断是否成功
-                if (cfd == -1) {
-                    cout<<"errno is "<<errno<<endl;
-                    continue;
-                }
-                //判断客户端是否达到最大连接数量
-                if (http_con::m_user_count >= MAX_FD) {
-                    close(cfd);
-                    continue;
-                }
-                //建立客户端新的连接
-                users[cfd].init(cfd, clientadd);
+                bool flag = dealclient();
+                if (!flag) cout<<"dealclient false"<<endl;
             }else if (sockfd == pipefd[0] && events[i].events & EPOLLIN) {
-                int sig;
-                char signals[1024];
-                int ret = recv(pipefd[0], signals, sizeof(signals), 0);
-                if(ret == -1){
-                    continue;
-                }else if(ret == 0){
-                    continue;
-                }else{
-                    for(int i = 0; i < ret; ++i){
-                        switch (signals[i]){
-                        case SIGALRM:
-                        // 用timeout变量标记有定时任务需要处理，但不立即处理定时任务
-                        // 这是因为定时任务的优先级不是很高，我们优先处理其他更重要的任务。
-                            timeout = true;
-                            break;
-                        case SIGTERM:
-                            stop_server = true;
-                        }
-                    }
-                }
+                //处理信号
+                bool flag = dealsignal(timeout, stop_server);
+                if (!flag) cout<<"dealsignal false!"<<endl; 
             }else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
                 //检测发现事件错误，关闭客户端连接
                 users[sockfd].close_con();
@@ -162,6 +131,49 @@ void Webserver::eventloop() {
             // 因为一次 alarm 调用只会引起一次SIGALARM 信号，所以我们要重新定时，以不断触发 SIGALARM信号。
             alarm(TIMESLOT);
             timeout = false;    // 重置timeout
+        }
+    }
+}
+
+bool Webserver::dealclient(){
+    //如果是监听描述符，需要添加到epoll监听队列中
+    struct sockaddr_in clientadd;
+    socklen_t len = sizeof(clientadd);
+    int cfd = accept(listenfd, (struct sockaddr *)&clientadd, &len);
+    //判断是否成功
+    if (cfd == -1) {
+        cout<<"errno is "<<errno<<endl;
+        return false;
+    }
+    //判断客户端是否达到最大连接数量
+    if (http_con::m_user_count >= MAX_FD) {
+        close(cfd);
+        return false;
+    }
+    //建立客户端新的连接
+    users[cfd].init(cfd, clientadd);
+    return true;
+}
+
+bool Webserver::dealsignal(bool &timeout, bool &stop_server) {
+    int sig;
+    char signals[1024];
+    int ret = recv(pipefd[0], signals, sizeof(signals), 0);
+    if(ret == -1){
+        return false;
+    }else if(ret == 0){
+        return false;
+    }else{
+        for(int i = 0; i < ret; ++i){
+            switch (signals[i]){
+            case SIGALRM:
+            // 用timeout变量标记有定时任务需要处理，但不立即处理定时任务
+            // 这是因为定时任务的优先级不是很高，我们优先处理其他更重要的任务。
+                timeout = true;
+                break;
+            case SIGTERM:
+                stop_server = true;
+            }
         }
     }
 }

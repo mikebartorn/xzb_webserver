@@ -36,6 +36,10 @@ public:
     void eventlisten();
     //运行程序
     void eventloop();
+    //处理管道写事件函数
+    bool dealsignal(bool &timeout, bool &stop_over);
+    //处理socket监听事件函数
+    bool dealclient();
 
 public:
     //端口
