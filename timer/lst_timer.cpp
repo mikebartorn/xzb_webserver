@@ -119,7 +119,7 @@ void sort_timer_lst::tick() {
     if( !head ) {
         return;
     }
-    cout<<"timer tick"<<endl;
+    // cout<<"timer tick"<<endl;
     time_t curr_time = time(NULL);  // 获取当前系统时间
     util_timer* tmp = head;
     // 从头节点开始依次处理每个定时器，直到遇到一个尚未到期的定时器

@@ -74,9 +74,10 @@ void modfd(int epollfd, int fd, int ev) {
 }
 
 //初始化新的客户端连接，也就是将客户端连接添加到epoll检测队列中
-void http_con::init(int sockfd, const sockaddr_in& addr){
+void http_con::init(int sockfd, const sockaddr_in& addr, int close_log){
     m_sockfd = sockfd;
     m_address = addr;
+    m_close_log = close_log;
 
     //设置端口复用
     int reuse = 1;
@@ -161,9 +162,6 @@ bool http_con::read(){
 //自己定义的写事件
 bool http_con::write(){
     int temp = 0;
-    // int bytes_have_send = 0;    // 已经发送的字节
-    // int bytes_to_send = m_write_idx;// 将要发送的字节 （m_write_idx）写缓冲区中待发送的字节数
-    
     if(timer) {//写数据需要更新超时的时间              
         time_t curr_time = time( NULL );
         timer->expire = curr_time + 3 * TIMESLOT;
@@ -324,7 +322,8 @@ http_con::HTTP_CODE http_con::parse_headers(char* text) {
         text += strspn(text, " \t");
         m_host = text;
     }else {
-        cout<<"oop! unknow header "<<text<<endl;
+        LOG_INFO("oop!unknow header: %s", text);
+        // cout<<"oop!unknow header"<<endl;
     }
     return NO_REQUEST;
 }
@@ -393,17 +392,16 @@ http_con::HTTP_CODE http_con::process_read() {
                 || ((line_status = parse_line()) == LINE_OK)) {
         //获取一行数据
         text = get_line();
-        // cout<<"text: "<<text<<endl;
+
         //行数据的起始位置等于解析字符在读缓冲区中的位置
         m_start_line = m_checked_index;
-        cout<<"get 1 http line:"<<text<<endl;
+        LOG_INFO("get 1 http line: %s", text);
 
         //状态机转换
         switch (m_check_state) {
             //请求行解析
             case CHECK_STATE_REQUESTLINE: {
                 ret = parse_request_line(text);
-                // cout<<"request ret: "<< ret <<endl;
                 if (ret == BAD_REQUEST) {
                     return BAD_REQUEST;
                 }
@@ -412,7 +410,6 @@ http_con::HTTP_CODE http_con::process_read() {
             //请求头部解析
             case CHECK_STATE_HEADER: {
                 ret = parse_headers(text);
-                // cout<<"header ret: "<< ret <<endl;
                 if (ret == BAD_REQUEST) {
                     return BAD_REQUEST;
                 }else if (ret == GET_REQUEST) {
@@ -424,7 +421,6 @@ http_con::HTTP_CODE http_con::process_read() {
             //请求内容解析
             case CHECK_STATE_CONTENT: {
                 ret = parse_content(text);
-                // cout<<"content ret: "<< ret <<endl;
                 if (ret == GET_REQUEST) {
                     //http请求完整，进行解析
                     return do_request();
@@ -511,6 +507,7 @@ bool http_con::add_response( const char* format, ... ) {
     }
     m_write_idx += len;
     va_end( arg_list );
+    LOG_INFO("request:%s", m_write_buf);
     return true;
 }
 
@@ -551,7 +548,6 @@ void http_con::process(){
     
     //解析http请求报文
     HTTP_CODE read_ret = process_read();
-    // cout<<"read_ret: "<<read_ret<<endl;
     if (read_ret == NO_REQUEST) {//请求不完整，需要继续读取客户数据
         //充值客户端的文件描述符状态
         modfd(m_epollfd, m_sockfd, EPOLLIN);
@@ -560,7 +556,6 @@ void http_con::process(){
 
     //生成响应
     bool write_ret = process_write(read_ret);
-    // cout<<"write_ret: "<<write_ret<<endl;
     if (!write_ret) {
         close_con();//关闭连接
         if(timer) m_timer_lst.del_timer(timer);

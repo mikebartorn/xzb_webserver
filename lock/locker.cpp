@@ -24,7 +24,7 @@ pthread_mutex_t* locker:: get() {
 
  //构造函数，初始化条件变量
 cond::cond() {
-    assert(pthread_cond_init(&m_cond, NULL) != 0);
+    pthread_cond_init(&m_cond, NULL);
 }
 //析构函数，释放条件变量
 cond::~cond() {

@@ -47,26 +47,26 @@ template<typename T>
 threadpool<T>:: threadpool(int thread_number, int max_requests): m_pthreadnum(thread_number),
     m_queuesize(max_requests), m_stop(false), m_pthread(NULL){
     if((m_pthreadnum <= 0) || (m_queuesize <= 0) ) {
-        cout<<"threadpool error!"<<endl;
+        throw std::exception();
         exit(-1);
     }
     //创建存放线程的数组
     m_pthread = new pthread_t[m_pthreadnum];
     if(!m_pthread) {
-        cout<<"threadpool error!"<<endl;
+        throw std::exception();
         exit(-1);
     }
     //创建线程
     for (int i = 0; i < thread_number; i++) {
-        cout<<"create the"<<i<<"th thread"<<endl;
+        // cout<<"create the"<<i<<"th thread"<<endl;
         if(pthread_create(m_pthread+i, NULL, worker, this) != 0) {
             delete[] m_pthread;
-            cout<<"threadpool error!"<<endl;
+            throw std::exception();
             exit(-1);
         }
         if(pthread_detach(m_pthread[i]) != 0) {
             delete[] m_pthread;
-            cout<<"threadpool error!"<<endl;
+            throw std::exception();
             exit(-1);
         }
     }

@@ -31,6 +31,6 @@ public:
     //²¶×½ÐÅºÅº¯Êý
     void addsig(int sig, void(handeler) (int));
 public:
-    static int u_pipefd[2];
+    static int* u_pipefd;
 };
 

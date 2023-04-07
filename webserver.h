@@ -15,6 +15,9 @@
 #include"./timer/lst_timer.h"
 #include"./utils/utils.h"
 #include"./config/config.h"
+#include"./log/log.h"
+#include"./log/block_queue.h"
+#include"./timer/lst_timer.h"
 
 using namespace std;
 
@@ -29,7 +32,7 @@ public:
     ~Webserver();
 
     //初始化函数
-    void init(int port);
+    void init(int port, int close_log);
     //线程池
     void thread_pool();
     //socket监听
@@ -40,30 +43,37 @@ public:
     bool dealsignal(bool &timeout, bool &stop_over);
     //处理socket监听事件函数
     bool dealclient();
+    
+    //日志函数
+    void log_write();
 
 public:
     //端口
-    int port;
+    int m_port;
 
     //线程相关变量
     threadpool<http_con>* pool = NULL;
 
     //监听变量
-    int listenfd;                   //监听fd
+    int m_listenfd;                   //监听fd
     int reuse;                      //端口复用
     struct sockaddr_in serveradd;   //服务端地址信息
     
     //epoll事件相关
     epoll_event events[MAX_EVENT_NUMBER];   //epoll监听事件
-    int epollfd;                            //epoll文件描述符
+    int m_epollfd;                            //epoll文件描述符
 
     //http_con连接相关
     http_con *users;
 
+    //log日志
+    int m_close_log;
+
     //utils
     Utils utils;
 
-
+    //定时器
+    
     int pipefd[2];   //管道文件描述符 0为读,1为写
 };
 

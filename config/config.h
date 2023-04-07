@@ -12,5 +12,6 @@ public:
     void parse_arg(int argc, char* argv[]);
 public:
     int port;//¶Ë¿ÚºÅ
+    int close_log;
 };
 

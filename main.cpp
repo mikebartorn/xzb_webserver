@@ -1,6 +1,5 @@
 #include "webserver.h"
 
-//Ö÷º¯Êý
 int main(int argc, char* argv[]) {
 
     Config config;
@@ -8,7 +7,9 @@ int main(int argc, char* argv[]) {
 
     Webserver server;
 
-    server.init(config.port);
+    server.init(config.port, config.close_log);
+
+    server.log_write();
 
     server.thread_pool();
 

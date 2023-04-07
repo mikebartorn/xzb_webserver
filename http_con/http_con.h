@@ -18,6 +18,9 @@
 #include<sys/uio.h>
 #include"../timer/lst_timer.h"
 #include"../threadpool/threadpool.h"
+#include"../log/log.h"
+#include"../log/block_queue.h"
+#include"../utils/utils.h"
 
 using namespace std;
 
@@ -35,8 +38,12 @@ public:
     void process();//处理客户端请求
     bool read();//非阻塞读数据
     bool write();//非阻塞写数据
-    void init(int sockfd, const sockaddr_in& addr);//初始化连接
+    void init(int sockfd, const sockaddr_in& addr, int close_log);//初始化连接
     void close_con();//关闭连接
+
+    sockaddr_in *get_address(){
+        return &m_address;
+    }
 
 public:
     static int m_user_count;//客户端连接的数量
@@ -45,8 +52,11 @@ public:
     static const int WRITE_BUFFER_SIZE = 2048;//写缓冲区大小
     static const int FILENAME_LEN = 1024;//文件名称长度
 
+    int m_close_log;
+
     util_timer* timer;
     static sort_timer_lst m_timer_lst;// 定时器链表
+
 
     // HTTP请求方法，这里只支持GET
     enum METHOD {GET = 0, POST, HEAD, PUT, DELETE, TRACE, OPTIONS, CONNECT};

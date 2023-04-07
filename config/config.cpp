@@ -3,6 +3,7 @@
 Config::Config() {
     //?????10000
     port = 10000;
+    close_log = 0;
 }
 
 Config::~Config(){

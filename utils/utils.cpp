@@ -8,7 +8,7 @@ Utils::~Utils() {
 
 }
 
-int Utils::u_pipefd[2] = {0, 0};
+int* Utils::u_pipefd = 0;
 
 //往epoll中添加需要监听的文件描述符
 void Utils::addfd(int epollfd, int fd, bool one_shoot, bool et) {
