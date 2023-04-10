@@ -16,11 +16,15 @@
 #include<errno.h>
 #include<stdarg.h>
 #include<sys/uio.h>
+#include<mysql/mysql.h>
+#include<fstream>
+#include<map>
 #include"../timer/lst_timer.h"
 #include"../threadpool/threadpool.h"
 #include"../log/log.h"
 #include"../log/block_queue.h"
 #include"../utils/utils.h"
+#include"../sql/sql_connection_pool.h"
 
 using namespace std;
 
@@ -38,12 +42,15 @@ public:
     void process();//处理客户端请求
     bool read();//非阻塞读数据
     bool write();//非阻塞写数据
-    void init(int sockfd, const sockaddr_in& addr, int close_log);//初始化连接
+    void init(int sockfd, const sockaddr_in& addr, int close_log, 
+                string user, string passwd, string basename);//初始化连接
     void close_con();//关闭连接
 
     sockaddr_in *get_address(){
         return &m_address;
     }
+
+    void initmysql_result(Connection_pool *connPool);//
 
 public:
     static int m_user_count;//客户端连接的数量
@@ -57,6 +64,7 @@ public:
     util_timer* timer;
     static sort_timer_lst m_timer_lst;// 定时器链表
 
+    MYSQL* mysql;   //数据库
 
     // HTTP请求方法，这里只支持GET
     enum METHOD {GET = 0, POST, HEAD, PUT, DELETE, TRACE, OPTIONS, CONNECT};
@@ -139,6 +147,14 @@ private :
     char* m_host;                       //主机名
     int m_content_length;               //http请求消息的总长度
     bool m_linger;                      //http请求是否要求保持连接
+
+    char *m_string;                     //存储请求头数据（用户名和密码）
+    int cgi;                            //是否使用POST
+
+
+    char sql_user[100];
+    char sql_passwd[100];
+    char sql_name[100];      
 };
 
 

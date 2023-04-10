@@ -18,6 +18,7 @@
 #include"./log/log.h"
 #include"./log/block_queue.h"
 #include"./timer/lst_timer.h"
+#include"./sql/sql_connection_pool.h"
 
 using namespace std;
 
@@ -32,7 +33,8 @@ public:
     ~Webserver();
 
     //初始化函数
-    void init(int port, int close_log);
+    void init(int port, int close_log, string user, string passward, string basename, 
+                int max_conn);
     //线程池
     void thread_pool();
     //socket监听
@@ -46,6 +48,8 @@ public:
     
     //日志函数
     void log_write();
+    //数据库初始化函数
+    void sql_init();
 
 public:
     //端口
@@ -72,7 +76,12 @@ public:
     //utils
     Utils utils;
 
-    //定时器
+    //数据库相关
+    string m_user;      //登录名称
+    string m_passward;  //登录密码
+    string m_basename;  //数据库名称
+    int m_max_conn;     //数据库最大连接数量
+    Connection_pool* m_connpool; //数据库池
     
     int pipefd[2];   //管道文件描述符 0为读,1为写
 };

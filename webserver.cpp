@@ -17,15 +17,29 @@ Webserver::~Webserver() {
 }
 
 
-void Webserver::init(int port, int close_log) {
+void Webserver::init(int port, int close_log, string user, string passward, string basename,
+                        int max_conn) {
     m_port = port;
     m_close_log = close_log;
+    m_user = user;
+    m_passward = passward;
+    m_basename = basename;
+    m_max_conn = max_conn;
+}
+
+void Webserver::sql_init() {
+    m_connpool = Connection_pool::GetInstance();
+    m_connpool->init("localhost", m_user, m_passward, m_basename, 3306, 
+                        m_max_conn, m_close_log);
+
+    //初始化数据库读取表
+    users->initmysql_result(m_connpool);
 }
 
 //创建线程池，使用默认线程数量
 void Webserver::thread_pool() {
     //需要手动释放内存
-    pool = new threadpool<http_con>;
+    pool = new threadpool<http_con>(m_connpool);
 }
 
 void Webserver::eventlisten() {
@@ -154,7 +168,7 @@ bool Webserver::dealclient(){
         return false;
     }
     //建立客户端新的连接
-    users[cfd].init(cfd, clientadd, m_close_log);
+    users[cfd].init(cfd, clientadd, m_close_log, m_user, m_passward, m_basename);
     return true;
     LOG_INFO("deal client %s", inet_ntoa(clientadd.sin_addr));
 }

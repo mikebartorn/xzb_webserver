@@ -6,6 +6,7 @@
 #include <list>
 #include <stdio.h>
 #include "../lock/locker.h"
+#include "../sql/sql_connection_pool.h"
 
 using namespace std;
 
@@ -13,7 +14,7 @@ template<typename T>
 class threadpool {
 public:
     //构造函数
-    threadpool(int thread_number = 8, int max_requests = 10000);
+    threadpool(Connection_pool *connpool, int thread_number = 8, int max_requests = 10000);
     //析构函数
     ~threadpool();
     //添加工作队列到请求队列中
@@ -40,12 +41,14 @@ private:
     sem m_queue_sem;
     //是否停止线程
     bool m_stop;
+
+    Connection_pool* m_connpool;//数据库池
 };
 
 
 template<typename T>
-threadpool<T>:: threadpool(int thread_number, int max_requests): m_pthreadnum(thread_number),
-    m_queuesize(max_requests), m_stop(false), m_pthread(NULL){
+threadpool<T>:: threadpool(Connection_pool *connpool, int thread_number, int max_requests):m_connpool(connpool), 
+    m_pthreadnum(thread_number),m_queuesize(max_requests), m_stop(false), m_pthread(NULL){
     if((m_pthreadnum <= 0) || (m_queuesize <= 0) ) {
         throw std::exception();
         exit(-1);
@@ -121,10 +124,10 @@ void threadpool<T>::run() {
         }
         //取出请求队列的工作函数
         T* request = m_queue.front();
-        //第二个问题，队列先进先出
         m_queue.pop_front();
         //对互斥量解锁
         m_queue_lock.unlock();
+        ConnectionRAII mysqlcon(&request->mysql, m_connpool);
         request->process();
     }
 }
