@@ -62,49 +62,6 @@ http_con::~http_con(){
 
 }
 
-//设置文件描述符为非阻塞形式
-void setnonblock(int fd) {
-    //获取文件描述的状态
-    int old_option = fcntl(fd, F_GETFL);
-    int new_option = old_option | O_NONBLOCK;
-    fcntl(fd, F_SETFL, new_option);
-}
-
-//往epoll中添加需要监听的文件描述符
-void addfd(int epollfd, int fd, bool one_shoot, bool et) {
-    //配置文件描述符信息
-    struct epoll_event epev;
-    epev.data.fd = fd;
-    if (et) {
-        epev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
-    }else {
-        epev.events = EPOLLIN | EPOLLRDHUP;
-    }
-    if (one_shoot) {//防止同一个通信被不同的线程处理
-        epev.events |= EPOLLONESHOT;
-    }
-    //往epollfd添加监听的文件描述符
-    epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &epev);
-    //设置为非阻塞形式
-    setnonblock(fd);
-}
-
-//往epollfd删除文件描述符
-void removefd(int epollfd, int fd) {
-    //往epollfd中删除文件描述符
-    epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, 0);
-    //关闭文件描述符
-    close(fd);
-}
-
-//修改epollfd中fd的状态
-void modfd(int epollfd, int fd, int ev) {
-    struct epoll_event epev;
-    epev.data.fd = fd;
-    epev.events = ev | EPOLLRDHUP | EPOLLONESHOT;
-    epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, &epev);
-}
-
 //初始化新的客户端连接，也就是将客户端连接添加到epoll检测队列中
 void http_con::init(int sockfd, const sockaddr_in& addr, int close_log, 
                     string user, string passwd, string basename){
@@ -115,7 +72,7 @@ void http_con::init(int sockfd, const sockaddr_in& addr, int close_log,
     //设置端口复用
     int reuse = 1;
     setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
-    addfd(m_epollfd, m_sockfd, true, ET);
+    util.addfd(m_epollfd, m_sockfd, true, ET);
     m_user_count++;
     init();
 
@@ -162,7 +119,7 @@ void http_con::init() {
 void http_con::close_con(){
     if (m_sockfd != -1) {
         //从epollfd监听队列中删除客户端的fd，并且关闭客户端的文件描述符
-        removefd(m_epollfd, m_sockfd);
+        util.removefd(m_epollfd, m_sockfd);
         m_sockfd = -1;
         m_user_count--;
     }
@@ -531,7 +488,7 @@ bool http_con::write(){
 
     if ( bytes_to_send == 0 ) {
         // 将要发送的字节为0，这一次响应结束。
-        modfd( m_epollfd, m_sockfd, EPOLLIN ); 
+        util.modfd( m_epollfd, m_sockfd, EPOLLIN ); 
         init();
         return true;
     }
@@ -543,7 +500,7 @@ bool http_con::write(){
             // 如果TCP写缓冲没有空间，则等待下一轮EPOLLOUT事件，虽然在此期间，
             // 服务器无法立即接收到同一客户的下一个请求，但可以保证连接的完整性。
             if( errno == EAGAIN ) {
-                modfd( m_epollfd, m_sockfd, EPOLLOUT );
+                util.modfd( m_epollfd, m_sockfd, EPOLLOUT );
                 return true;
             }
             unmap();
@@ -568,7 +525,7 @@ bool http_con::write(){
         if (bytes_to_send <= 0){
             // 没有数据要发送了
             unmap();
-            modfd(m_epollfd, m_sockfd, EPOLLIN);
+            util.modfd(m_epollfd, m_sockfd, EPOLLIN);
 
             if (m_linger){
                 init();
@@ -707,7 +664,7 @@ void http_con::process(){
     HTTP_CODE read_ret = process_read();
     if (read_ret == NO_REQUEST) {//请求不完整，需要继续读取客户数据
         //充值客户端的文件描述符状态
-        modfd(m_epollfd, m_sockfd, EPOLLIN);
+        util.modfd(m_epollfd, m_sockfd, EPOLLIN);
         return ;
     }
 
@@ -718,5 +675,5 @@ void http_con::process(){
         if(timer) m_timer_lst.del_timer(timer);
     }
     //重置epollonrshot
-    modfd(m_epollfd, m_sockfd, EPOLLOUT);
+    util.modfd(m_epollfd, m_sockfd, EPOLLOUT);
 }

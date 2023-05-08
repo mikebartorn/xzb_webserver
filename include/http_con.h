@@ -64,6 +64,8 @@ public:
     util_timer* timer;
     static sort_timer_lst m_timer_lst;// 定时器链表
 
+    Utils util;
+
     MYSQL* mysql;   //数据库
 
     // HTTP请求方法，这里只支持GET
